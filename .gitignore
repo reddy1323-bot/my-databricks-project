@@ -1,0 +1,17 @@
+# Databricks Asset Bundles
+.databricks/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Test and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE and OS
+.vscode/
+.DS_Store

@@ -1,0 +1,92 @@
+name: Deploy Databricks Asset Bundle
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Deployment target
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Install test dependencies
+        run: pip install pytest
+
+      - name: Validate
+        env:
+          DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST_DEV }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: databricks bundle validate --target dev
+
+      - name: Run tests
+        run: python -m pytest -q
+
+  deploy-dev:
+    name: Deploy to development
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event.inputs.target == 'dev'
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Deploy development bundle
+        env:
+          DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST_DEV }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: databricks bundle deploy --target dev
+
+  deploy-prod:
+    name: Deploy to production
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'prod'
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Deploy production bundle
+        env:
+          DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST_PROD }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: databricks bundle deploy --target prod
