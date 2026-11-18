@@ -19,7 +19,7 @@ resources:
         - task_key: landing_to_feed
           job_cluster_key: etl_shared
           notebook_task:
-            notebook_path: ../../src/etl/LandingtoFeed
+            notebook_path: ../../src/etl/LandingtoFeed.py
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
@@ -36,7 +36,7 @@ resources:
             - task_key: landing_to_feed
           job_cluster_key: etl_shared
           notebook_task:
-            notebook_path: ../../src/etl/FeedtoSTG
+            notebook_path: ../../src/etl/FeedtoSTG.py
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}
@@ -53,7 +53,7 @@ resources:
             - task_key: feed_to_stg
           job_cluster_key: etl_shared
           notebook_task:
-            notebook_path: ../../src/etl/STGtoDatamart
+            notebook_path: ../../src/etl/STGtoDatamart.py
             base_parameters:
               catalog: ${var.catalog}
               schema: ${var.schema}

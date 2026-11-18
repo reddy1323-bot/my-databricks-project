@@ -50,8 +50,9 @@ def test_notebook_paths_resolve_to_files_in_the_repository():
     )
 
     for task in etl_job()["tasks"]:
-        notebook_path = task["notebook_task"]["notebook_path"]
-        resolved = (resource_file.parent / notebook_path).with_suffix(".py")
+        notebook_path = Path(task["notebook_task"]["notebook_path"])
+        assert notebook_path.suffix == ".py", task["task_key"]
+        resolved = resource_file.parent / notebook_path
         assert resolved.is_file(), f"{task['task_key']} points at missing notebook {resolved}"
 
 
