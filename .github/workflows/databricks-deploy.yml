@@ -80,7 +80,7 @@ jobs:
         run: |
           databricks bundle validate --target dev
           databricks bundle deploy --target dev
-          databricks bundle run medallion_pipeline --target dev
+          # databricks bundle run medallion_pipeline --target dev
 
   deploy-prod:
     name: Deploy to production
@@ -122,4 +122,4 @@ jobs:
         run: |
           databricks bundle validate --target prod
           databricks bundle deploy --target prod
-          databricks bundle run medallion_pipeline --target prod
+         # databricks bundle run medallion_pipeline --target prod
