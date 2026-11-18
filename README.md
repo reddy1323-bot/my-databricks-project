@@ -33,18 +33,18 @@ event types to lowercase and derives `event_date` from the timestamp.
    `--var`.
 4. Configure the GitHub repository:
    - Secret `DATABRICKS_TOKEN` (a service-principal token is recommended).
-   - Actions variables `DATABRICKS_HOST_DEV` and `DATABRICKS_HOST_PROD`, each
-     set to the full workspace URL beginning with `https://` (for example,
-     `https://<workspace-host>`). These can be repository/org variables, or
-     environment variables in the corresponding `dev`/`prod` GitHub
-     environments. If the token is environment-scoped instead of a repository
-     secret, add it to both the `dev` and `prod` environments.
+   - The workflow defaults both workspace hosts to the URL previously
+     configured in this repository. Optionally override this using Actions
+     variables `DATABRICKS_HOST_DEV` and `DATABRICKS_HOST_PROD`, set to full
+     workspace URLs beginning with `https://`. If the token is
+     environment-scoped instead of a repository secret, add it to both the
+     `dev` and `prod` environments.
    - GitHub environments named `dev` and `prod`; configure required reviewers
      for `prod` to gate production releases.
    - Set `catalog`, `source_path`, and `schema_location` in
      `databricks.yml` to values that exist in the target workspaces. Both
-       targets use the same catalog and input Volume by default; their Auto
-       Loader schema-state locations are separate.
+     targets use the same catalog and input Volume by default; their Auto
+     Loader schema-state locations are separate.
 
 The default catalog and Volume paths are examples and must be provisioned or
 changed for your workspace before running the pipeline. Dev and prod use

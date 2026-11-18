@@ -46,6 +46,8 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     environment: dev
+    env:
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST_DEV || 'https://dbc-16325a15-87c0.cloud.databricks.com' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -54,7 +56,6 @@ jobs:
 
       - name: Check Databricks authentication configuration
         env:
-          DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST_DEV }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
           if [ -z "$DATABRICKS_HOST" ]; then
@@ -75,7 +76,6 @@ jobs:
 
       - name: Validate and deploy development bundle
         env:
-          DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST_DEV }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
           databricks bundle validate --target dev
@@ -88,6 +88,8 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     environment: prod
+    env:
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST_PROD || 'https://dbc-16325a15-87c0.cloud.databricks.com' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -96,7 +98,6 @@ jobs:
 
       - name: Check Databricks authentication configuration
         env:
-          DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST_PROD }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
           if [ -z "$DATABRICKS_HOST" ]; then
@@ -117,7 +118,6 @@ jobs:
 
       - name: Validate and deploy production bundle
         env:
-          DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST_PROD }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
           databricks bundle validate --target prod
