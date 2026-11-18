@@ -16,7 +16,7 @@ variables:
     default: /Volumes/main/ops/autoloader_schemas/sales_events_dev
 
 include:
-  - resources/*.yml
+  - databricks/resources/*.yml
 
 targets:
   dev:

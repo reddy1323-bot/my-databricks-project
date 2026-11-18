@@ -48,3 +48,12 @@ def test_prod_target_uses_production_mode_and_separate_schema_state():
     assert "schema: medallion_prod" in bundle
     assert "sales_events_prod" in bundle
     assert "development: false" in bundle
+
+
+def test_bundle_includes_pipeline_resource_file():
+    bundle = (ROOT / "databricks.yml").read_text(encoding="utf-8")
+    resource = ROOT / "databricks" / "resources" / "medallion_pipeline.yml"
+
+    assert "databricks/resources/*.yml" in bundle
+    assert resource.is_file()
+    assert "medallion_pipeline:" in resource.read_text(encoding="utf-8")
