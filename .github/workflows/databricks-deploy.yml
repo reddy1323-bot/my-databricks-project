@@ -52,6 +52,27 @@ jobs:
       - name: Set up Databricks CLI
         uses: databricks/setup-cli@main
 
+      - name: Check Databricks authentication configuration
+        env:
+          DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST_DEV }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          if [ -z "$DATABRICKS_HOST" ]; then
+            echo "::error::DATABRICKS_HOST_DEV is empty. Set it to the development workspace URL in GitHub Actions variables."
+            exit 1
+          fi
+          case "$DATABRICKS_HOST" in
+            https://*) ;;
+            *)
+              echo "::error::DATABRICKS_HOST_DEV must be a full https:// workspace URL."
+              exit 1
+              ;;
+          esac
+          if [ -z "$DATABRICKS_TOKEN" ]; then
+            echo "::error::DATABRICKS_TOKEN is empty or unavailable to this workflow."
+            exit 1
+          fi
+
       - name: Validate and deploy development bundle
         env:
           DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST_DEV }}
@@ -72,6 +93,27 @@ jobs:
 
       - name: Set up Databricks CLI
         uses: databricks/setup-cli@main
+
+      - name: Check Databricks authentication configuration
+        env:
+          DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST_PROD }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          if [ -z "$DATABRICKS_HOST" ]; then
+            echo "::error::DATABRICKS_HOST_PROD is empty. Set it to the production workspace URL in GitHub Actions variables."
+            exit 1
+          fi
+          case "$DATABRICKS_HOST" in
+            https://*) ;;
+            *)
+              echo "::error::DATABRICKS_HOST_PROD must be a full https:// workspace URL."
+              exit 1
+              ;;
+          esac
+          if [ -z "$DATABRICKS_TOKEN" ]; then
+            echo "::error::DATABRICKS_TOKEN is empty or unavailable to this workflow."
+            exit 1
+          fi
 
       - name: Validate and deploy production bundle
         env:
