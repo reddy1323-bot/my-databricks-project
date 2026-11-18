@@ -4,16 +4,16 @@ bundle:
 variables:
   catalog:
     description: Unity Catalog catalog for pipeline tables
-    default: main
+    default: demo
   schema:
     description: Unity Catalog schema for pipeline tables
     default: medallion_dev
   source_path:
     description: Unity Catalog Volume path containing incoming sales-event JSON files
-    default: /Volumes/main/landing/sales_events
+    default: /Volumes/demo/feed/feed
   schema_location:
     description: Writable Unity Catalog Volume path for Auto Loader schema state
-    default: /Volumes/main/ops/autoloader_schemas/sales_events_dev
+    default: /Volumes/demo/feed/feed/_autoloader/sales_events_dev
 
 include:
   - databricks/resources/*.yml
@@ -29,7 +29,7 @@ targets:
     mode: production
     variables:
       schema: medallion_prod
-      schema_location: /Volumes/main/ops/autoloader_schemas/sales_events_prod
+      schema_location: /Volumes/demo/feed/feed/_autoloader/sales_events_prod
     resources:
       pipelines:
         medallion_pipeline:

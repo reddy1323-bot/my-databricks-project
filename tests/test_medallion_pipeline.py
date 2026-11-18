@@ -46,7 +46,13 @@ def test_prod_target_uses_production_mode_and_separate_schema_state():
     bundle = (ROOT / "databricks.yml").read_text(encoding="utf-8")
 
     assert "schema: medallion_prod" in bundle
-    assert "sales_events_prod" in bundle
+    assert "default: demo" in bundle
+    assert "default: /Volumes/demo/feed/feed" in bundle
+    assert "default: /Volumes/demo/feed/feed/_autoloader/sales_events_dev" in bundle
+    assert (
+        "schema_location: /Volumes/demo/feed/feed/_autoloader/sales_events_prod"
+        in bundle
+    )
     assert "development: false" in bundle
 
 
