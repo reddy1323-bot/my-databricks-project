@@ -1,0 +1,66 @@
+resources:
+  jobs:
+    etl_flow:
+      name: etl_flow
+      description: Landing -> Feed -> STG -> Datamart chain for the configured entity.
+      max_concurrent_runs: 1
+
+      job_clusters:
+        - job_cluster_key: etl_shared
+          new_cluster:
+            spark_version: ${var.spark_version}
+            node_type_id: ${var.node_type_id}
+            num_workers: ${var.num_workers}
+            data_security_mode: SINGLE_USER
+            spark_conf:
+              spark.databricks.delta.preview.enabled: "true"
+
+      tasks:
+        - task_key: landing_to_feed
+          job_cluster_key: etl_shared
+          notebook_task:
+            notebook_path: ../../src/etl/LandingtoFeed
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              landing_path: ${var.landing_path}
+              entity: ${var.entity}
+              run_date: "{{job.start_time.iso_date}}"
+            source: WORKSPACE
+          timeout_seconds: 3600
+          max_retries: 1
+          min_retry_interval_millis: 60000
+
+        - task_key: feed_to_stg
+          depends_on:
+            - task_key: landing_to_feed
+          job_cluster_key: etl_shared
+          notebook_task:
+            notebook_path: ../../src/etl/FeedtoSTG
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              entity: ${var.entity}
+              business_key: ${var.business_key}
+              run_date: "{{job.start_time.iso_date}}"
+            source: WORKSPACE
+          timeout_seconds: 3600
+          max_retries: 1
+          min_retry_interval_millis: 60000
+
+        - task_key: stg_to_datamart
+          depends_on:
+            - task_key: feed_to_stg
+          job_cluster_key: etl_shared
+          notebook_task:
+            notebook_path: ../../src/etl/STGtoDatamart
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              entity: ${var.entity}
+              business_key: ${var.business_key}
+              run_date: "{{job.start_time.iso_date}}"
+            source: WORKSPACE
+          timeout_seconds: 3600
+          max_retries: 1
+          min_retry_interval_millis: 60000

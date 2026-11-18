@@ -1,36 +1,44 @@
 bundle:
   name: my-databricks-project
 
-variables:
-  catalog:
-    description: Unity Catalog catalog for pipeline tables
-    default: demo
-  schema:
-    description: Unity Catalog schema for pipeline tables
-    default: medallion_dev
-  source_path:
-    description: Unity Catalog Volume path containing incoming sales-event JSON files
-    default: /Volumes/demo/feed/feed
-  schema_location:
-    description: Writable Unity Catalog Volume path for Auto Loader schema state
-    default: /Volumes/demo/feed/feed/_autoloader/sales_events_dev
-
 include:
   - databricks/resources/*.yml
+
+variables:
+  catalog:
+    description: Unity Catalog catalog that holds the landing, feed, stg and datamart layers.
+    default: dev_catalog
+  schema:
+    description: Schema that holds the feed, stg and datamart tables.
+    default: etl
+  landing_path:
+    description: Volume or external location that holds the raw landing files.
+    default: /Volumes/dev_catalog/etl/landing
+  entity:
+    description: Logical entity processed by the ETL flow (drives file and table names).
+    default: customer
+  business_key:
+    description: Column that uniquely identifies a row of the entity; drives dedupe and upsert.
+    default: customer_id
+  spark_version:
+    description: Databricks Runtime version used by the shared ETL job cluster.
+    default: 15.4.x-scala2.12
+  node_type_id:
+    description: Worker and driver node type for the shared ETL job cluster.
+    default: Standard_DS3_v2
+  num_workers:
+    description: Worker count for the shared ETL job cluster (0 = single node).
+    default: 1
 
 targets:
   dev:
     mode: development
     default: true
-    variables:
-      schema: medallion_dev
 
   prod:
     mode: production
+    # Production runs against its own catalog. Deploy with a service principal and
+    # set `run_as` on the job so ownership does not depend on a personal account.
     variables:
-      schema: medallion_prod
-      schema_location: /Volumes/demo/feed/feed/_autoloader/sales_events_prod
-    resources:
-      pipelines:
-        medallion_pipeline:
-          development: false
+      catalog: prod_catalog
+      landing_path: /Volumes/prod_catalog/etl/landing

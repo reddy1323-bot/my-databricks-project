@@ -1,84 +1,76 @@
-# Databricks Medallion ETL
+# Databricks Project
 
-A three-layer, incremental sales-events pipeline built with Databricks Asset
-Bundles (DABs), Delta Live Tables (DLT), Auto Loader, and GitHub Actions.
+A Databricks Asset Bundle project containing the `etl_flow` job: a three-stage
+Landing -> Feed -> STG -> Datamart pipeline driven by one entity.
 
-## Pipeline
+## What the bundle contains
 
-`src/pipelines/medallion_pipeline.py` reads JSON files incrementally from a
-Unity Catalog Volume and publishes three managed Delta tables:
+| Path | Purpose |
+| --- | --- |
+| `databricks.yml` | Bundle root: targets, variables, includes |
+| `databricks/resources/etl_flow.job.yml` | The `etl_flow` job definition |
+| `src/etl/LandingtoFeed.py` | Task 1: landing files -> `feed_{entity}` |
+| `src/etl/FeedtoSTG.py` | Task 2: feed -> `stg_{entity}` plus `stg_{entity}_rejected` |
+| `src/etl/STGtoDatamart.py` | Task 3: STG -> `dim_{entity}` via Delta MERGE |
+| `tests/` | Pytest suite that reads the bundle and asserts its structure |
 
-| Layer | Table | Purpose |
-|---|---|---|
-| Bronze | `bronze_sales_events` | Source fields plus rescued data, source filename, and ingestion timestamp |
-| Silver | `silver_sales_events` | Typed and normalized records; invalid IDs, timestamps, customer IDs, and negative/invalid amounts are dropped and counted as expectation failures |
-| Gold | `gold_daily_customer_sales` | Daily gross sales and event counts by customer and event type |
+The three tasks share a single job cluster and run in order: `feed_to_stg` waits
+for `landing_to_feed`, and `stg_to_datamart` waits for `feed_to_stg`, so a failed
+layer stops the chain instead of publishing stale data.
 
-Expected input fields are `event_id`, `event_timestamp` (ISO-8601), `customer_id`,
-`event_type`, and `amount` (decimal-compatible). The silver layer normalizes
-event types to lowercase and derives `event_date` from the timestamp.
+## Parameters
 
-## Prerequisites and configuration
+Bundle variables in `databricks.yml` feed the job's task parameters:
 
-1. Install the current Databricks CLI and authenticate to your workspace:
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `catalog` | `dev_catalog` (`prod_catalog` on `prod`) | Catalog holding every layer |
+| `schema` | `etl` | Schema holding the tables |
+| `landing_path` | `/Volumes/dev_catalog/etl/landing` | Raw landing location |
+| `entity` | `customer` | Drives file and table naming |
+| `business_key` | `customer_id` | Key used for dedupe and the dimension merge |
+| `spark_version` | `15.4.x-scala2.12` | Job cluster runtime |
+| `node_type_id` | `Standard_DS3_v2` | Job cluster node type |
+| `num_workers` | `1` | Job cluster workers (0 = single node) |
 
-   ```bash
-   databricks auth login --host https://<workspace-url>
-   ```
-
-2. Ensure the pipeline's service principal/user has Unity Catalog access to the
-   catalog/schema and read access to the input Volume.
-3. Create a writable Volume for Auto Loader schema state. Configure its path and
-   the input Volume path in `databricks.yml` defaults or pass overrides with
-   `--var`.
-4. Configure the GitHub repository:
-   - Secret `DATABRICKS_TOKEN` (a service-principal token is recommended).
-   - The workflow defaults both workspace hosts to the URL previously
-     configured in this repository. Optionally override this using Actions
-     variables `DATABRICKS_HOST_DEV` and `DATABRICKS_HOST_PROD`, set to full
-     workspace URLs beginning with `https://`. If the token is
-     environment-scoped instead of a repository secret, add it to both the
-     `dev` and `prod` environments.
-   - GitHub environments named `dev` and `prod`; configure required reviewers
-     for `prod` to gate production releases.
-   - Set `catalog`, `source_path`, and `schema_location` in
-     `databricks.yml` to values that exist in the target workspaces. Both
-     targets use the same catalog and input Volume by default; their Auto
-     Loader schema-state locations are separate.
-
-The default catalog and Volume paths are examples and must be provisioned or
-changed for your workspace before running the pipeline. Dev and prod use
-separate output schemas (`medallion_dev` and `medallion_prod`).
+Override any of them per deploy, for example:
+`databricks bundle deploy --target dev --var entity=orders --var business_key=order_id`
 
 ## Local validation and deployment
 
 ```bash
-python -m pip install pytest
+python -m pip install pytest pyyaml
 python -m pytest -q
 
+databricks auth login --host https://<workspace-url>
 databricks bundle validate --target dev
-databricks bundle deploy --target dev
-databricks bundle run medallion_pipeline --target dev
+databricks bundle deploy  --target dev
+databricks bundle run etl_flow --target dev
 ```
 
-Override defaults without editing the bundle when needed:
+`dev` is the default target and runs in development mode, so every resource is
+prefixed with `[dev <your-username>]` and never collides with another engineer's
+deployment. `prod` runs in production mode and overrides `catalog` and
+`landing_path`; deploy it with a service principal and set `run_as` on the job so
+ownership does not follow a personal account.
 
-```bash
-databricks bundle validate --target dev \
-  --var="catalog=analytics,source_path=/Volumes/analytics/landing/sales_events,schema_location=/Volumes/analytics/ops/autoloader_schemas/sales_events"
-```
+## Data quality and observability
 
-The pipeline is triggered in triggered mode by `bundle run`; it processes
-available files and stops. Auto Loader tracks progress in the managed pipeline
-checkpoint, and its schema state is stored at `schema_location`.
+- `FeedtoSTG` routes rows with a missing or empty business key into
+  `stg_{entity}_rejected` with a `_reject_reason` instead of dropping them silently.
+- `STGtoDatamart` upserts with a change hash, so unchanged keys are not rewritten,
+  and appends one row per run to `datamart_{entity}_run_metrics` (rows staged,
+  inserted, updated, unchanged).
+- `LandingtoFeed` fails fast when the landing partition is empty.
 
-## GitHub Actions
+## Credentials
 
-- Pull requests run tests only; they do not deploy untrusted PR code.
-- Pushes to `main` test, validate, deploy, and run the dev pipeline.
-- `workflow_dispatch` can deploy and run either target. Protect the GitHub
-  `prod` environment with required reviewers for an approval gate.
+Keep workspace credentials in Databricks CLI profiles locally and in GitHub
+Actions secrets in CI; never commit credentials. See `conf/README.md`.
 
-The deployment uses workspace authentication from the target environment's
-`DATABRICKS_HOST` and `DATABRICKS_TOKEN` values. Bundle state and pipeline
-resources are isolated by target.
+## Continuous integration
+
+The workflows described here (`pytest` on pull requests, dev deploy on `main`,
+manual production deploy) are not committed in this repository yet: `.github/`
+does not exist. Until they are added, deployment is the local `bundle deploy`
+flow above.
