@@ -4,6 +4,10 @@ bundle:
 include:
   - databricks/resources/*.yml
 
+sync:
+  exclude:
+    - src/ETLPipeline.dbc
+
 variables:
   catalog:
     description: Unity Catalog catalog that holds the landing, feed, stg and datamart layers.

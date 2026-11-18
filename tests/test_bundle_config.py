@@ -29,6 +29,10 @@ def test_include_globs_resolve_to_resource_files():
     assert included_resource_files(), "include globs match no resource files"
 
 
+def test_legacy_workspace_export_is_excluded_from_bundle_sync():
+    assert "src/ETLPipeline.dbc" in load_bundle()["sync"]["exclude"]
+
+
 def test_bundle_declares_at_least_one_job():
     resources = load_resources()
 
