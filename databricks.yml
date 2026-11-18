@@ -2,9 +2,18 @@ bundle:
   name: my-databricks-project
 
 variables:
-  environment:
-    description: Deployment environment
-    default: dev
+  catalog:
+    description: Unity Catalog catalog for pipeline tables
+    default: main
+  schema:
+    description: Unity Catalog schema for pipeline tables
+    default: medallion_dev
+  source_path:
+    description: Unity Catalog Volume path containing incoming sales-event JSON files
+    default: /Volumes/main/landing/sales_events
+  schema_location:
+    description: Writable Unity Catalog Volume path for Auto Loader schema state
+    default: /Volumes/main/ops/autoloader_schemas/sales_events_dev
 
 include:
   - resources/*.yml
@@ -14,15 +23,14 @@ targets:
     mode: development
     default: true
     variables:
-      environment: dev
-    workspace:
-      #root_path: /Workspace/Users/${workspace.current_user.user_name}/.bundle/${bundle.name}/${bundle.target}
-        host: https://dbc-16325a15-87c0.cloud.databricks.com
+      schema: medallion_dev
 
   prod:
     mode: production
     variables:
-      environment: prod
-    workspace:
-      #root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}
-       host:  https://dbc-16325a15-87c0.cloud.databricks.com
+      schema: medallion_prod
+      schema_location: /Volumes/main/ops/autoloader_schemas/sales_events_prod
+    resources:
+      pipelines:
+        medallion_pipeline:
+          development: false

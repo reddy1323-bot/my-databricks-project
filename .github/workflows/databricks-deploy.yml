@@ -18,9 +18,13 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: databricks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  validate:
-    name: Validate bundle
+  test:
+    name: Test pipeline
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,63 +34,50 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Set up Databricks CLI
-        uses: databricks/setup-cli@main
-
       - name: Install test dependencies
         run: pip install pytest
-
-      - name: Validate
-        env:
-          DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST_DEV }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-        run: databricks bundle validate --target dev
 
       - name: Run tests
         run: python -m pytest -q
 
   deploy-dev:
     name: Deploy to development
-    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event.inputs.target == 'dev'
-    needs: validate
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'dev')
+    needs: test
     runs-on: ubuntu-latest
     environment: dev
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
       - name: Set up Databricks CLI
         uses: databricks/setup-cli@main
 
-      - name: Deploy development bundle
+      - name: Validate and deploy development bundle
         env:
           DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST_DEV }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-        run: databricks bundle deploy --target dev
+        run: |
+          databricks bundle validate --target dev
+          databricks bundle deploy --target dev
+          databricks bundle run medallion_pipeline --target dev
 
   deploy-prod:
     name: Deploy to production
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'prod'
-    needs: validate
+    needs: test
     runs-on: ubuntu-latest
     environment: prod
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
       - name: Set up Databricks CLI
         uses: databricks/setup-cli@main
 
-      - name: Deploy production bundle
+      - name: Validate and deploy production bundle
         env:
           DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST_PROD }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-        run: databricks bundle deploy --target prod
+        run: |
+          databricks bundle validate --target prod
+          databricks bundle deploy --target prod
+          databricks bundle run medallion_pipeline --target prod
