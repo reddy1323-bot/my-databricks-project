@@ -17,7 +17,7 @@ targets:
       environment: dev
     workspace:
       #root_path: /Workspace/Users/${workspace.current_user.user_name}/.bundle/${bundle.name}/${bundle.target}
-        host: https://dbc-16325a15-87c0.cloud.databricks.com/browse/folders/3751414896025859?o=7474654769030409
+        host: https://dbc-16325a15-87c0.cloud.databricks.com
 
   prod:
     mode: production
@@ -25,4 +25,4 @@ targets:
       environment: prod
     workspace:
       #root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}
-       host: https://dbc-16325a15-87c0.cloud.databricks.com/browse/folders/3751414896025859?o=7474654769030409
+       host:  https://dbc-16325a15-87c0.cloud.databricks.com
