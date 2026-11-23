@@ -1,8 +1,8 @@
 resources:
   jobs:
-    etl_flow:
-      name: etl_flow
-      description: Landing -> Feed -> STG -> Datamart chain for the configured entity.
+    etl_flow_2:
+      name: etl_flow_2
+      description: Landing -> Feed -> STG -> Datamart secondary chain for the configured entity.
       max_concurrent_runs: 1
 
       tasks:
