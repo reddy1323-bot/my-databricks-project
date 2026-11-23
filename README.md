@@ -14,7 +14,7 @@ Landing -> Feed -> STG -> Datamart pipeline driven by one entity.
 | `src/etl/STGtoDatamart.py` | Task 3: STG -> `dim_{entity}` via Delta MERGE |
 | `tests/` | Pytest suite that reads the bundle and asserts its structure |
 
-The three tasks share a single job cluster and run in order: `feed_to_stg` waits
+The three tasks run on serverless compute in order: `feed_to_stg` waits
 for `landing_to_feed`, and `stg_to_datamart` waits for `feed_to_stg`, so a failed
 layer stops the chain instead of publishing stale data.
 
@@ -29,9 +29,6 @@ Bundle variables in `databricks.yml` feed the job's task parameters:
 | `landing_path` | `/Volumes/dev_catalog/etl/landing` | Raw landing location |
 | `entity` | `customer` | Drives file and table naming |
 | `business_key` | `customer_id` | Key used for dedupe and the dimension merge |
-| `spark_version` | `15.4.x-scala2.12` | Job cluster runtime |
-| `node_type_id` | `Standard_DS3_v2` | Job cluster node type |
-| `num_workers` | `1` | Job cluster workers (0 = single node) |
 
 Override any of them per deploy, for example:
 `databricks bundle deploy --target dev --var entity=orders --var business_key=order_id`

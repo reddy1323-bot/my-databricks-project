@@ -56,13 +56,11 @@ def test_notebook_paths_resolve_to_files_in_the_repository():
         assert resolved.is_file(), f"{task['task_key']} points at missing notebook {resolved}"
 
 
-def test_each_task_runs_on_the_shared_job_cluster():
+def test_each_task_uses_serverless_compute():
     job = etl_job()
-    cluster_keys = {cluster["job_cluster_key"] for cluster in job.get("job_clusters", [])}
-
-    assert cluster_keys, "job defines no job_clusters"
+    assert "job_clusters" not in job, "serverless jobs must not declare job_clusters"
     for task in job["tasks"]:
-        assert task.get("job_cluster_key") in cluster_keys, task["task_key"]
+        assert "job_cluster_key" not in task, task["task_key"]
 
 
 def test_notebooks_are_databricks_source_files():

@@ -5,19 +5,8 @@ resources:
       description: Landing -> Feed -> STG -> Datamart chain for the configured entity.
       max_concurrent_runs: 1
 
-      job_clusters:
-        - job_cluster_key: etl_shared
-          new_cluster:
-            spark_version: ${var.spark_version}
-            node_type_id: ${var.node_type_id}
-            num_workers: ${var.num_workers}
-            data_security_mode: SINGLE_USER
-            spark_conf:
-              spark.databricks.delta.preview.enabled: "true"
-
       tasks:
         - task_key: landing_to_feed
-          job_cluster_key: etl_shared
           notebook_task:
             notebook_path: ../../src/etl/LandingtoFeed.py
             base_parameters:
@@ -34,7 +23,6 @@ resources:
         - task_key: feed_to_stg
           depends_on:
             - task_key: landing_to_feed
-          job_cluster_key: etl_shared
           notebook_task:
             notebook_path: ../../src/etl/FeedtoSTG.py
             base_parameters:
@@ -51,7 +39,6 @@ resources:
         - task_key: stg_to_datamart
           depends_on:
             - task_key: feed_to_stg
-          job_cluster_key: etl_shared
           notebook_task:
             notebook_path: ../../src/etl/STGtoDatamart.py
             base_parameters:

@@ -24,15 +24,6 @@ variables:
   business_key:
     description: Column that uniquely identifies a row of the entity; drives dedupe and upsert.
     default: customer_id
-  spark_version:
-    description: Databricks Runtime version used by the shared ETL job cluster.
-    default: 15.4.x-scala2.12
-  node_type_id:
-    description: Worker and driver node type for the shared ETL job cluster.
-    default: Standard_DS3_v2
-  num_workers:
-    description: Worker count for the shared ETL job cluster (0 = single node).
-    default: 1
 
 targets:
   dev:
