@@ -69,6 +69,37 @@ def read_landing(source: str) -> DataFrame:
         .csv(source)
     )
 
+
+def ensure_landing_data_exists(source: str, entity: str) -> None:
+    """Ensure the landing location has data; seeds initial sample data if path is missing or empty."""
+    has_files = False
+    try:
+        files = dbutils.fs.ls(source)  # noqa: F821
+        has_files = len(files) > 0
+    except Exception:
+        has_files = False
+
+    if not has_files:
+        print(f"Landing path '{source}' does not exist or has no files.")
+        print(f"Seeding sample data for entity '{entity}'...")
+        key_col = f"{entity}_id"
+        sample_rows = [
+            (f"{entity[:3].upper()}101", f"{entity.capitalize()} Alpha", "active", "2026-11-20"),
+            (f"{entity[:3].upper()}102", f"{entity.capitalize()} Beta", "pending", "2026-11-21"),
+            (f"{entity[:3].upper()}103", f"{entity.capitalize()} Gamma", "active", "2026-11-22"),
+        ]
+        sample_df = spark.createDataFrame(
+            sample_rows,
+            [key_col, f"{entity}_name", "status", "created_date"],
+        )
+        (
+            sample_df.write.format("csv")
+            .option("header", "true")
+            .mode("overwrite")
+            .save(source)
+        )
+        print(f"Sample data successfully written to {source}.")
+
 # COMMAND ----------
 
 
@@ -124,6 +155,8 @@ def main() -> None:
     feed_table = f"{catalog}.{schema}.feed_{parameters['entity']}"
 
     spark.sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{schema}")
+
+    ensure_landing_data_exists(source, parameters["entity"])
 
     raw = read_landing(source)
     if not raw.take(1):
