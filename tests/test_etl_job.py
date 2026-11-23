@@ -6,11 +6,13 @@ from bundle_loader import PROJECT_ROOT, load_resources, task_by_key
 
 JOB_KEY = "etl_flow"
 EXPECTED_CHAIN = [
-    ("landing_to_feed", None),
+    ("init_catalog_schema", None),
+    ("landing_to_feed", "init_catalog_schema"),
     ("feed_to_stg", "landing_to_feed"),
     ("stg_to_datamart", "feed_to_stg"),
 ]
 LAYER_PARAMETERS = {
+    "init_catalog_schema": {"catalog", "schema", "volume"},
     "landing_to_feed": {"catalog", "schema", "landing_path", "entity", "run_date"},
     "feed_to_stg": {"catalog", "schema", "entity", "business_key", "run_date"},
     "stg_to_datamart": {"catalog", "schema", "entity", "business_key", "run_date"},

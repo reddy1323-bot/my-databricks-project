@@ -18,13 +18,16 @@ All jobs in this directory run on **Databricks Serverless Compute**:
 ## Task Graph (`etl_flow`)
 
 ```
-landing_to_feed  (Notebook: src/etl/LandingtoFeed.py)
-       │
-       ▼
-  feed_to_stg    (Notebook: src/etl/FeedtoSTG.py)
-       │
-       ▼
-stg_to_datamart  (Notebook: src/etl/STGtoDatamart.py)
+init_catalog_schema  (Notebook: src/etl/InitCatalogSchema.py)
+        │
+        ▼
+ landing_to_feed     (Notebook: src/etl/LandingtoFeed.py)
+        │
+        ▼
+   feed_to_stg       (Notebook: src/etl/FeedtoSTG.py)
+        │
+        ▼
+ stg_to_datamart     (Notebook: src/etl/STGtoDatamart.py)
 ```
 
 Each task passes parameters dynamically from bundle variables and runtime values (`{{job.start_time.iso_date}}`).

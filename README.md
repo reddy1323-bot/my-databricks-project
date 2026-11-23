@@ -9,14 +9,15 @@ Landing -> Feed -> STG -> Datamart pipeline driven by one entity.
 | --- | --- |
 | `databricks.yml` | Bundle root: targets, variables, includes |
 | `databricks/resources/etl_flow.job.yml` | The `etl_flow` job definition |
-| `src/etl/LandingtoFeed.py` | Task 1: landing files -> `feed_{entity}` |
-| `src/etl/FeedtoSTG.py` | Task 2: feed -> `stg_{entity}` plus `stg_{entity}_rejected` |
-| `src/etl/STGtoDatamart.py` | Task 3: STG -> `dim_{entity}` via Delta MERGE |
+| `src/etl/InitCatalogSchema.py` | Task 1: catalog, schema & volume initialization |
+| `src/etl/LandingtoFeed.py` | Task 2: landing files -> `feed_{entity}` |
+| `src/etl/FeedtoSTG.py` | Task 3: feed -> `stg_{entity}` plus `stg_{entity}_rejected` |
+| `src/etl/STGtoDatamart.py` | Task 4: STG -> `dim_{entity}` via Delta MERGE |
 | `tests/` | Pytest suite that reads the bundle and asserts its structure |
 
-The three tasks run on serverless compute in order: `feed_to_stg` waits
-for `landing_to_feed`, and `stg_to_datamart` waits for `feed_to_stg`, so a failed
-layer stops the chain instead of publishing stale data.
+The four tasks run on serverless compute in order: `landing_to_feed` waits for
+`init_catalog_schema`, `feed_to_stg` waits for `landing_to_feed`, and `stg_to_datamart`
+waits for `feed_to_stg`, so a failed layer stops the chain instead of publishing stale data.
 
 ## Parameters
 
