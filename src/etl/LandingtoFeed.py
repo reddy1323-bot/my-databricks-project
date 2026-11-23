@@ -126,9 +126,10 @@ def normalise_columns(df: DataFrame) -> DataFrame:
 
 def add_ingestion_metadata(df: DataFrame, run_date: str) -> DataFrame:
     """Stamp the ingestion metadata every downstream layer relies on."""
+    # In Unity Catalog, input_file_name() is not supported; _metadata.file_path is used instead.
     return (
         df.withColumn("_ingested_at", F.current_timestamp())
-        .withColumn("_source_file", F.input_file_name())
+        .withColumn("_source_file", F.col("_metadata.file_path"))
         .withColumn("_run_date", F.lit(run_date))
     )
 
