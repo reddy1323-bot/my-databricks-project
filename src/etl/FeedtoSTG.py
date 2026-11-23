@@ -113,6 +113,16 @@ def write_layer(df: DataFrame, table: str) -> None:
         .saveAsTable(table)
     )
 
+
+def write_rejected(df: DataFrame, table: str) -> None:
+    """Append rejected rows so quarantine history is preserved across runs."""
+    (
+        df.write.format("delta")
+        .mode("append")
+        .option("mergeSchema", "true")
+        .saveAsTable(table)
+    )
+
 # COMMAND ----------
 
 
@@ -135,7 +145,7 @@ def main() -> None:
     staged = deduplicate(valid, business_key).withColumn("_processed_at", F.current_timestamp())
 
     write_layer(staged, stg_table)
-    write_layer(rejected, rejected_table)
+    write_rejected(rejected, rejected_table)
 
     print(
         f"feed_to_stg: {stg_table} rows={staged.count()}, "

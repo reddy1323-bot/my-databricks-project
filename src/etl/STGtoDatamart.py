@@ -41,7 +41,15 @@ PARAMETER_DEFAULTS = {
 for parameter_name, default_value in PARAMETER_DEFAULTS.items():
     dbutils.widgets.text(parameter_name, default_value)  # noqa: F821 - provided by the runtime
 
-MANAGED_COLUMNS = ("_change_hash", "_created_at", "_updated_at", "_run_date")
+MANAGED_COLUMNS = (
+    "_change_hash",
+    "_created_at",
+    "_updated_at",
+    "_run_date",
+    "_processed_at",
+    "_ingested_at",
+    "_source_file",
+)
 
 # COMMAND ----------
 
@@ -76,8 +84,8 @@ def shape_datamart(df: DataFrame) -> DataFrame:
 
 
 def payload_columns(df: DataFrame) -> list:
-    """Columns carried from STG into the dimension, excluding load-managed columns."""
-    return [column for column in df.columns if column not in MANAGED_COLUMNS]
+    """Columns carried from STG into the dimension, excluding metadata and load-managed columns."""
+    return [column for column in df.columns if not column.startswith("_") and column not in MANAGED_COLUMNS]
 
 
 def change_hash(df: DataFrame) -> DataFrame:
@@ -99,9 +107,9 @@ def merge_into_dimension(
 ) -> None:
     """Upsert the source into the dimension: insert new keys, update changed ones, keep the rest."""
     payload = payload_columns(source)
-    insert_columns = ", ".join(payload + ["_change_hash", "_created_at", "_updated_at", "_run_date"])
+    insert_columns = ", ".join([f"`{col}`" for col in payload] + ["`_change_hash`", "`_created_at`", "`_updated_at`", "`_run_date`"])
     insert_values = ", ".join(
-        [f"source.{column}" for column in payload]
+        [f"source.`{column}`" for column in payload]
         + [
             "source._change_hash",
             "current_timestamp()",
@@ -109,14 +117,14 @@ def merge_into_dimension(
             f"'{report_date}'",
         ]
     )
-    update_columns = ", ".join(f"target.{column} = source.{column}" for column in payload)
+    update_columns = ", ".join(f"target.`{column}` = source.`{column}`" for column in payload)
 
     source.createOrReplaceTempView("dim_source")
     spark.sql(
         f"""
         MERGE INTO {dim_table} AS target
         USING dim_source AS source
-        ON target.{business_key} = source.{business_key}
+        ON target.`{business_key}` = source.`{business_key}`
         WHEN MATCHED AND target._change_hash <> source._change_hash THEN UPDATE SET
             {update_columns},
             target._change_hash = source._change_hash,
@@ -176,15 +184,25 @@ def main() -> None:
     prepared = change_hash(staged)
 
     if not spark.catalog.tableExists(dim_table):
-        (prepared.withColumn("_created_at", F.current_timestamp())
+        payload = payload_columns(prepared)
+        initial_dim = (
+            prepared.select(*[F.col(c) for c in payload], "_change_hash")
+            .withColumn("_created_at", F.current_timestamp())
             .withColumn("_updated_at", F.current_timestamp())
-            .write.format("delta")
+            .withColumn("_run_date", F.lit(report_date))
+        )
+        (
+            initial_dim.write.format("delta")
             .option("overwriteSchema", "true")
-            .saveAsTable(dim_table))
+            .saveAsTable(dim_table)
+        )
+        metrics = {
+            "numTargetRowsInserted": prepared.count(),
+            "numTargetRowsUpdated": 0,
+        }
     else:
         merge_into_dimension(prepared, dim_table, business_key, report_date)
-
-    metrics = latest_merge_metrics(dim_table)
+        metrics = latest_merge_metrics(dim_table)
     record_run_metrics(metrics_table, entity, report_date, prepared.count(), metrics)
     print(f"stg_to_datamart: {dim_table} upserted={metrics}, metrics logged to {metrics_table}")
 

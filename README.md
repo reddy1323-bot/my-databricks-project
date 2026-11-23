@@ -70,7 +70,11 @@ Actions secrets in CI; never commit credentials. See `conf/README.md`.
 
 ## Continuous integration
 
-The workflows described here (`pytest` on pull requests, dev deploy on `main`,
-manual production deploy) are not committed in this repository yet: `.github/`
-does not exist. Until they are added, deployment is the local `bundle deploy`
-flow above.
+The workflows (`pytest` on pull requests, dev deploy on `main`, manual production deploy)
+are configured in `.github/workflows/databricks-deploy.yml`:
+- **Pull requests**: runs unit tests via `pytest`.
+- **Push to main**: runs tests and deploys to `dev`.
+- **Workflow dispatch**: manual trigger to deploy to `dev` or `prod`.
+
+Configure GitHub Actions environment secrets and variables (`DATABRICKS_TOKEN`,
+`DATABRICKS_HOST_DEV`, `DATABRICKS_HOST_PROD`) before running deployments.

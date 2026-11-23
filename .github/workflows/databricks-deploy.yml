@@ -88,7 +88,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: prod
     env:
-      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST_PROD || 'https://dbc-16325a15-87c0.cloud.databricks.com' }}
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST_PROD }}
     steps:
       - uses: actions/checkout@v4
 
